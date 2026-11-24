@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BC-6 weekly order planner</title>
+<style>
+:root{
+  --bg:#f2f4f5;--panel:#fff;--ink:#1b2730;--mute:#5b6a74;--line:#d5dbdf;
+  --c100:#2f5fc4;--c200:#1c8c86;--c300:#d9962b;--best:#1c8c86;--warn:#b4440f;
+  --focus:#2f5fc4;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#141a1f;--panel:#1d252c;--ink:#e8edf0;--mute:#9aa8b2;--line:#35424b;
+  --c100:#7ea2f0;--c200:#52c2bb;--c300:#f0b45c;--best:#52c2bb;--warn:#f0905c;--focus:#7ea2f0}
+}
+*{box-sizing:border-box}
+html{font-family:"Avenir Next","Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+body{margin:0;padding:24px 16px 48px}
+main{max-width:920px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-size:1.6rem;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:1.05rem;margin:0 0 12px}
+p{line-height:1.5;margin:0}
+.sub{color:var(--mute)}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 14px}
+button:hover{border-color:var(--mute)}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+label{display:block;font-size:.9rem;color:var(--mute);margin-bottom:4px}
+.field{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:var(--bg)}
+.field span{color:var(--mute)}
+input[type=number]{font:inherit;color:var(--ink);background:transparent;border:0;width:100%;padding:9px 6px;min-width:0}
+input[type=number]:focus-visible{outline:none}
+.field:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.msg{margin-top:12px;font-size:.9rem;color:var(--warn)}
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:16px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative}
+.chip .band{height:56px;display:flex;align-items:flex-end;padding:8px 14px;color:#fff;font-weight:600}
+.chip .body{padding:12px 14px 14px}
+.chip .ev{font-size:1.9rem;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.chip.best{outline:3px solid var(--best);outline-offset:2px}
+.tag{position:absolute;top:10px;right:10px;background:#fff;color:#14602b;font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:999px}
+.bar{height:10px;background:var(--line);border-radius:5px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%}
+.rec{font-size:1.15rem;line-height:1.45}
+.rec b{font-size:1.3rem}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-weight:600;font-size:.9rem}
+thead .p{display:block;font-weight:400;color:var(--mute);font-size:.8rem}
+td.neg{color:var(--warn)}
+tr.best td{font-weight:700}
+dialog{max-width:640px;width:calc(100% - 32px);border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);padding:24px}
+dialog::backdrop{background:rgba(10,16,20,.55)}
+dialog h2{font-size:1.25rem}
+dialog ol{padding-left:20px;line-height:1.55;margin:0 0 16px}
+dialog li{margin-bottom:8px}
+code{background:var(--bg);padding:1px 6px;border-radius:5px}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .25s}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1>BC-6 weekly order planner</h1>
+    <p class="sub">How many cases should you order this week? Change the numbers and the answer updates.</p>
+  </div>
+  <button id="howBtn" class="primary" type="button">How it works</button>
+</header>
+
+<section class="panel" aria-labelledby="h-in">
+  <h2 id="h-in">Your numbers</h2>
+  <div class="inputs">
+    <div><label for="price">Selling price per case</label><div class="field"><span>$</span><input id="price" type="number" min="0" step="any" value="100"></div></div>
+    <div><label for="cost">Cost per case</label><div class="field"><span>$</span><input id="cost" type="number" min="0" step="any" value="25"></div></div>
+    <div><label for="p100">Chance demand is 100 cases</label><div class="field"><input id="p100" type="number" min="0" max="100" step="any" value="33.33"><span>%</span></div></div>
+    <div><label for="p200">Chance demand is 200 cases</label><div class="field"><input id="p200" type="number" min="0" max="100" step="any" value="33.33"><span>%</span></div></div>
+    <div><label for="p300">Chance demand is 300 cases</label><div class="field"><input id="p300" type="number" min="0" max="100" step="any" value="33.34"><span>%</span></div></div>
+  </div>
+  <p class="sub" style="margin-top:12px;font-size:.9rem">Unsold cases are lost, so they earn nothing back.</p>
+  <div id="msg" class="msg" role="alert" hidden></div>
+</section>
+
+<section class="panel" aria-live="polite">
+  <p id="rec" class="rec"></p>
+</section>
+
+<section class="chips" id="chips" aria-label="Expected profit by order quantity"></section>
+
+<section class="panel">
+  <h2>Decision tree: profit for every order and demand</h2>
+  <div class="tablewrap"><table id="tbl"></table></div>
+</section>
+</main>
+
+<dialog id="how" aria-labelledby="how-h">
+  <h2 id="how-h">How it works</h2>
+  <ol>
+    <li><b>Pick the choices.</b> You can order 100, 200 or 300 cases. Demand will also be 100, 200 or 300, with the chances you entered.</li>
+    <li><b>Work out the profit in each scenario.</b> Profit = price × cases sold − cost × cases ordered. You can only sell what you ordered or what customers want, whichever is smaller: <code>sold = min(order, demand)</code>.</li>
+    <li><b>Weight by probability.</b> Multiply each scenario's profit by its chance, then add them up. That is the <i>expected profit</i> of the order: what you'd earn per week on average if you made the same choice many weeks.</li>
+    <li><b>Recommend the best.</b> The order with the highest expected profit is highlighted. Expected profit is an average, so any single week can come out higher or lower.</li>
+  </ol>
+  <p class="sub" style="margin-bottom:16px">If your chances don't add up to 100%, the app scales them so they do and shows a note.</p>
+  <button type="button" class="primary" id="closeBtn">Got it</button>
+</dialog>
+
+<script>
+(function(){
+  var Q=[100,200,300], COL=["var(--c100)","var(--c200)","var(--c300)"];
+  var $=function(id){return document.getElementById(id)};
+  var money=function(n){var r=Math.round(n);return (r<0?"-$":"$")+Math.abs(r).toLocaleString("en-US")};
+  var pct=function(n){return (Math.round(n*10)/10)+"%"};
+
+  function read(){
+    var price=parseFloat($("price").value), cost=parseFloat($("cost").value);
+    var p=["p100","p200","p300"].map(function(id){return parseFloat($(id).value)});
+    return {price:price,cost:cost,p:p};
+  }
+
+  function render(){
+    var s=read(), msg=$("msg"), errs=[], note="";
+    if(isNaN(s.price)||s.price<0) errs.push("Enter a selling price of $0 or more.");
+    if(isNaN(s.cost)||s.cost<0) errs.push("Enter a cost of $0 or more.");
+    if(s.p.some(function(x){return isNaN(x)||x<0})) errs.push("Enter a chance from 0% to 100% for each demand level.");
+    var sum=s.p.reduce(function(a,b){return a+b},0);
+    if(!errs.length && sum<=0) errs.push("At least one demand level needs a chance above 0%.");
+    if(errs.length){
+      msg.hidden=false; msg.textContent=errs.join(" ");
+      $("rec").textContent="Fix the highlighted inputs to see a recommendation.";
+      $("chips").innerHTML=""; $("tbl").innerHTML=""; return;
+    }
+    var pr=s.p.map(function(x){return x/sum});
+    if(Math.abs(sum-100)>0.05) note="Your chances add up to "+pct(sum)+", not 100%. Results use them scaled to 100%.";
+    msg.hidden=!note; msg.textContent=note;
+
+    // payoff[i][j] = profit when ordering Q[i] and demand is Q[j]
+    var pay=Q.map(function(q){return Q.map(function(d){return s.price*Math.min(q,d)-s.cost*q})});
+    var ev=pay.map(function(row){return row.reduce(function(a,v,j){return a+v*pr[j]},0)});
+    var max=Math.max.apply(null,ev), eps=1e-9;
+    var best=ev.map(function(v){return Math.abs(v-max)<eps});
+    var bestIdx=[];best.forEach(function(b,i){if(b)bestIdx.push(i)});
+
+    var rec;
+    if(bestIdx.length===1){
+      rec="Order <b>"+Q[bestIdx[0]]+" cases</b>. Expected profit is <b>"+money(max)+"</b> a week.";
+      var others=ev.filter(function(v,i){return i!==bestIdx[0]}).sort(function(a,b){return b-a});
+      rec+=" That is "+money(max-others[0])+" more than the next best order.";
+    }else{
+      rec="Orders of "+bestIdx.map(function(i){return Q[i]}).join(" and ")+" cases tie for the best expected profit of <b>"+money(max)+"</b> a week.";
+    }
+    $("rec").innerHTML=rec;
+
+    var lo=Math.min(0,Math.min.apply(null,ev)), span=(max-lo)||1;
+    $("chips").innerHTML=Q.map(function(q,i){
+      var w=Math.max(0,(ev[i]-lo)/span*100);
+      return '<article class="chip'+(best[i]?' best':'')+'">'+
+        '<div class="band" style="background:'+COL[i]+'">Order '+q+' cases</div>'+
+        (best[i]?'<span class="tag">Best</span>':'')+
+        '<div class="body"><div class="ev">'+money(ev[i])+'</div>'+
+        '<div class="sub">expected profit per week</div>'+
+        '<div class="bar" role="img" aria-label="'+money(ev[i])+' of '+money(max)+' best"><i style="width:'+w+'%;background:'+COL[i]+'"></i></div></div></article>';
+    }).join("");
+
+    var h='<thead><tr><th scope="col">Order</th>'+Q.map(function(d,j){
+      return '<th scope="col">Demand '+d+'<span class="p">'+pct(pr[j]*100)+' chance</span></th>';
+    }).join("")+'<th scope="col">Expected profit<span class="p">sum of profit × chance</span></th></tr></thead><tbody>';
+    Q.forEach(function(q,i){
+      h+='<tr'+(best[i]?' class="best"':'')+'><th scope="row">'+q+' cases'+(best[i]?' (best)':'')+'</th>'+
+        pay[i].map(function(v){return '<td'+(v<0?' class="neg"':'')+'>'+money(v)+'</td>'}).join("")+
+        '<td>'+money(ev[i])+'</td></tr>';
+    });
+    $("tbl").innerHTML=h+'</tbody>';
+  }
+
+  ["price","cost","p100","p200","p300"].forEach(function(id){$(id).addEventListener("input",render)});
+  var dlg=$("how");
+  $("howBtn").addEventListener("click",function(){
+    if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
+  });
+  $("closeBtn").addEventListener("click",function(){dlg.close?dlg.close():dlg.removeAttribute("open")});
+  dlg.addEventListener("click",function(e){if(e.target===dlg)dlg.close()});
+  render();
+})();
+</script>
+</body>
+</html>
